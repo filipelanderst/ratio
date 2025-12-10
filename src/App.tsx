@@ -301,22 +301,36 @@ const formatTimeComponents = (seconds: number) => {
   return { main: mStr, super: sStr };
 };
 
-// --- Componente SkeletonCard Definido Explicitamente ---
-const SkeletonCard = ({ isDarkMode }: { isDarkMode: boolean }) => (
+// --- NOVO: Componente LoginSkeleton (Imita o layout da caixa de login) ---
+const LoginSkeleton = ({ isDarkMode }: { isDarkMode: boolean }) => (
   <div
-    className={`p-6 rounded-2xl border shadow-sm animate-pulse ${
+    className={`rounded-2xl shadow-xl p-8 max-w-md w-full border animate-pulse ${
       isDarkMode
         ? 'bg-neutral-900 border-neutral-800'
         : 'bg-white border-slate-200'
     }`}
   >
+    {/* Ícone Redondo */}
     <div
-      className={`h-4 w-24 mb-4 rounded ${
+      className={`h-12 w-12 mx-auto mb-4 rounded-full ${
         isDarkMode ? 'bg-neutral-800' : 'bg-slate-100'
       }`}
     ></div>
+    {/* Título Grande */}
     <div
-      className={`h-8 w-16 rounded ${
+      className={`h-8 w-32 mx-auto mb-2 rounded ${
+        isDarkMode ? 'bg-neutral-800' : 'bg-slate-100'
+      }`}
+    ></div>
+    {/* Subtítulo Pequeno */}
+    <div
+      className={`h-4 w-48 mx-auto mb-8 rounded ${
+        isDarkMode ? 'bg-neutral-800' : 'bg-slate-100'
+      }`}
+    ></div>
+    {/* Botão Largo */}
+    <div
+      className={`h-14 w-full rounded-xl ${
         isDarkMode ? 'bg-neutral-800' : 'bg-slate-100'
       }`}
     ></div>
@@ -1517,8 +1531,7 @@ export default function App() {
         className={`min-h-screen flex items-center justify-center p-4 ${THEME.bg}`}
       >
         <div className='w-full max-w-md space-y-4'>
-          <SkeletonCard isDarkMode={isDarkMode} />
-          <SkeletonCard isDarkMode={isDarkMode} />
+          <LoginSkeleton isDarkMode={isDarkMode} />
         </div>
       </div>
     );
