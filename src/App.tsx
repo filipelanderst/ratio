@@ -179,14 +179,14 @@ const FIXED_SUBJECTS = [
   'Português',
   'Produtividade',
   'Programação',
-  'Provas e Simulados', // Novo
+  'Provas e Simulados',
   'Psicologia',
-  'Qconcursos', // Novo
+  'Qconcursos',
   'Química',
   'Redação',
   'Russo',
   'Sociologia',
-  'TECconcursos', // Novo
+  'TECconcursos',
   'Teologia',
   'Vendas e Negociação',
   'Xadrez',
@@ -212,9 +212,9 @@ const appId = 'ratio-5bfb8';
 // --- Ativar Persistência Offline (Cache Inteligente) ---
 try {
   enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code == 'failed-precondition') {
+    if (err.code === 'failed-precondition') {
       console.warn('Persistência falhou: Multiplas abas abertas.');
-    } else if (err.code == 'unimplemented') {
+    } else if (err.code === 'unimplemented') {
       console.warn('Persistência não suportada neste navegador.');
     }
   });
@@ -300,6 +300,28 @@ const formatTimeComponents = (seconds: number) => {
   }
   return { main: mStr, super: sStr };
 };
+
+// --- Componente SkeletonCard Definido Explicitamente ---
+const SkeletonCard = ({ isDarkMode }: { isDarkMode: boolean }) => (
+  <div
+    className={`p-6 rounded-2xl border shadow-sm animate-pulse ${
+      isDarkMode
+        ? 'bg-neutral-900 border-neutral-800'
+        : 'bg-white border-slate-200'
+    }`}
+  >
+    <div
+      className={`h-4 w-24 mb-4 rounded ${
+        isDarkMode ? 'bg-neutral-800' : 'bg-slate-100'
+      }`}
+    ></div>
+    <div
+      className={`h-8 w-16 rounded ${
+        isDarkMode ? 'bg-neutral-800' : 'bg-slate-100'
+      }`}
+    ></div>
+  </div>
+);
 
 const triggerHaptic = () => {
   if (typeof navigator !== 'undefined' && navigator.vibrate)
@@ -428,7 +450,7 @@ export default function App() {
   }, [wrapperRef]);
 
   // Lock Body Scroll (Overscroll) - Mobile Native Feel
-  // CORREÇÃO: Força o background do body para esconder a linha branca
+  // CORREÇÃO: Força o background do body para esconder a linha branca e bloqueia overscroll
   useEffect(() => {
     document.body.style.overscrollBehaviorY = 'none';
     document.documentElement.style.overscrollBehaviorY = 'none';
@@ -490,8 +512,6 @@ export default function App() {
               setAuthError("Erro: Ative 'Anônimo' no Console.");
             }
           });
-        // NOTA: Não chamamos setLoading(false) aqui fora para evitar o flash
-        // Esperamos ou o user (Google/Anônimo) ou o erro do anônimo.
       }
     });
     return () => unsubscribe();
