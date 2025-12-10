@@ -14,7 +14,10 @@ export default defineConfig({
         description: 'Gerencie seus estudos com estatísticas avançadas.',
         theme_color: '#0a0a0a',
         background_color: '#0a0a0a',
-        display: 'standalone',
+
+        // MUDANÇA AQUI: 'fullscreen' esconde a barra de status e os botões de navegação
+        display: 'fullscreen',
+
         orientation: 'portrait',
         icons: [
           {
