@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from 'react';
 import { initializeApp } from 'firebase/app';
 import {
   getAuth,
@@ -8,6 +14,8 @@ import {
   onAuthStateChanged,
   signOut,
   User,
+  setPersistence,
+  browserLocalPersistence,
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -18,6 +26,9 @@ import {
   deleteDoc,
   setDoc,
   getDoc,
+  enableIndexedDbPersistence,
+  query,
+  orderBy,
 } from 'firebase/firestore';
 import {
   Clock,
@@ -196,6 +207,21 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = 'ratio-5bfb8';
+
+// --- Ativar Persistência Offline (Cache Inteligente) ---
+// Isso faz o app baixar tudo na primeira vez e depois só as diferenças.
+// Funciona como um "localStorage" supervitaminado para banco de dados.
+try {
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code == 'failed-precondition') {
+      console.warn('Persistência falhou: Multiplas abas abertas.');
+    } else if (err.code == 'unimplemented') {
+      console.warn('Persistência não suportada neste navegador.');
+    }
+  });
+} catch (e) {
+  console.log('Persistência já habilitada ou erro ao habilitar');
+}
 
 // --- Types & Interfaces ---
 interface StudySession {
@@ -402,6 +428,23 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [wrapperRef]);
 
+  // Lock Body Scroll (Overscroll) - Mobile Native Feel
+  useEffect(() => {
+    const preventDefault = (e: TouchEvent) => {
+      // Apenas previne se não estivermos em um container com scroll
+      // Mas como queremos comportamento nativo global, bloquear o body é o principal
+      // O CSS 'overscroll-behavior-y: none' já ajuda muito
+    };
+    // Adicionar CSS programaticamente para garantir
+    document.body.style.overscrollBehaviorY = 'none';
+    document.documentElement.style.overscrollBehaviorY = 'none';
+
+    return () => {
+      document.body.style.overscrollBehaviorY = 'auto';
+      document.documentElement.style.overscrollBehaviorY = 'auto';
+    };
+  }, []);
+
   // Timer Interval Logic
   useEffect(() => {
     let interval: any = null;
@@ -426,29 +469,37 @@ export default function App() {
     return () => clearInterval(interval);
   }, [timerIsActive, timerSeconds, timerMode]);
 
-  // AUTENTICAÇÃO: Google + Anônimo (Fallback)
+  // AUTENTICAÇÃO: Google + Anônimo (Fallback) + Persistência
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      if (u) {
-        setUser(u);
-        setLoading(false);
-        setAuthError(null);
-      } else {
-        setUser(null);
-        // Tenta login anônimo silenciosamente
-        signInAnonymously(auth).catch((error) => {
-          console.warn('Login anônimo:', error.code);
-          setLoading(false);
-          if (error.code === 'auth/admin-restricted-operation') {
-            setAuthError("Erro: Ative 'Anônimo' no Console.");
+    // Garante que a persistência é Local (sobrevive ao fechar o navegador)
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => {
+        const unsubscribe = onAuthStateChanged(auth, (u) => {
+          if (u) {
+            setUser(u);
+            setLoading(false);
+            setAuthError(null);
+          } else {
+            setUser(null);
+            // Tenta login anônimo silenciosamente
+            signInAnonymously(auth).catch((error) => {
+              console.warn('Login anônimo:', error.code);
+              setLoading(false);
+              // Não mostramos erro aqui para não assustar o usuário que vai logar com Google
+              // O erro só aparece se ele tentar logar e falhar
+            });
+            setLoading(false);
           }
         });
+        return () => unsubscribe();
+      })
+      .catch((error) => {
+        console.error('Erro na persistência de auth:', error);
         setLoading(false);
-      }
-    });
-    return () => unsubscribe();
+      });
   }, []);
 
+  // CARREGAMENTO DE DADOS (Firestore com Cache Offline)
   useEffect(() => {
     if (!user) return;
     const sessionsRef = collection(
@@ -460,6 +511,7 @@ export default function App() {
       'study_sessions'
     );
 
+    // O onSnapshot do Firebase já implementa o cache inteligente se enableIndexedDbPersistence foi chamado
     const unsubscribe = onSnapshot(
       sessionsRef,
       (snapshot) => {
@@ -477,8 +529,13 @@ export default function App() {
             });
           }
         });
+        // Ordenação local rápida
         loaded.sort((a, b) => b.timestamp - a.timestamp);
         setSessions(loaded);
+
+        // Checa se os dados vieram do cache ou do servidor (para debug se necessário)
+        // const source = snapshot.metadata.fromCache ? "local cache" : "server";
+        // console.log("Data fetched from " + source);
       },
       (error) => {
         console.error('Error fetching study sessions:', error);
@@ -501,6 +558,7 @@ export default function App() {
           'profile',
           'main'
         );
+        // getDoc também usa o cache se disponível e a rede estiver offline/lenta
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data() as UserProfile;
@@ -545,7 +603,7 @@ export default function App() {
     return [...startsWith, ...contains];
   }, [subjectInput]);
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = useCallback(async () => {
     triggerHaptic();
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
@@ -555,13 +613,13 @@ export default function App() {
         setAuthError(`Erro no login: ${e.message}`);
       }
     }
-  };
+  }, []);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     triggerHaptic();
     signOut(auth);
     setSessions([]);
-  };
+  }, []);
 
   const handleInstallClick = async () => {
     if (!installPrompt) return;
@@ -573,54 +631,64 @@ export default function App() {
     }
   };
 
-  const handleAddSession = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
-    if (!user || !subjectInput || !duration || !selectedDate) return;
+  const handleAddSession = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setFormError(null);
+      if (!user || !subjectInput || !duration || !selectedDate) return;
 
-    const selectedTime = new Date(selectedDate).getTime();
-    const now = new Date().getTime();
-    if (selectedTime > now) {
-      setFormError('Não é possível lançar estudos em datas futuras.');
-      return;
-    }
+      const selectedTime = new Date(selectedDate).getTime();
+      const now = new Date().getTime();
+      if (selectedTime > now) {
+        setFormError('Não é possível lançar estudos em datas futuras.');
+        return;
+      }
 
-    const cleanInput = normalizeString(subjectInput);
-    const exactMatch = FIXED_SUBJECTS.find(
-      (s) => normalizeString(s) === cleanInput
-    );
-    if (!exactMatch) {
-      setFormError('Disciplina não encontrada.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    triggerHaptic();
-
-    try {
-      const d = new Date(selectedDate);
-      await addDoc(
-        collection(db, 'artifacts', appId, 'users', user.uid, 'study_sessions'),
-        {
-          subject: exactMatch,
-          durationMinutes: parseInt(duration),
-          date: d.toISOString(),
-          timestamp: d.getTime(),
-        }
+      const cleanInput = normalizeString(subjectInput);
+      const exactMatch = FIXED_SUBJECTS.find(
+        (s) => normalizeString(s) === cleanInput
       );
-      setSubjectInput('');
-      setDuration('');
-      setShowSuggestions(false);
-      if (typeof navigator !== 'undefined' && navigator.vibrate)
-        navigator.vibrate([30, 50, 30]);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+      if (!exactMatch) {
+        setFormError('Disciplina não encontrada.');
+        return;
+      }
 
-  const handleSaveTimerSession = async () => {
+      setIsSubmitting(true);
+      triggerHaptic();
+
+      try {
+        const d = new Date(selectedDate);
+        await addDoc(
+          collection(
+            db,
+            'artifacts',
+            appId,
+            'users',
+            user.uid,
+            'study_sessions'
+          ),
+          {
+            subject: exactMatch,
+            durationMinutes: parseInt(duration),
+            date: d.toISOString(),
+            timestamp: d.getTime(),
+          }
+        );
+        setSubjectInput('');
+        setDuration('');
+        setShowSuggestions(false);
+        if (typeof navigator !== 'undefined' && navigator.vibrate)
+          navigator.vibrate([30, 50, 30]);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [user, subjectInput, duration, selectedDate]
+  );
+
+  const handleSaveTimerSession = useCallback(async () => {
     setFormError(null);
     if (!user) return;
 
@@ -676,48 +744,60 @@ export default function App() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [user, subjectInput, timerMode, timerSeconds, countdownInitialMinutes]);
 
-  const handleDeleteSession = async (id: string) => {
-    if (user) {
+  const handleDeleteSession = useCallback(
+    async (id: string) => {
+      if (user) {
+        triggerHaptic();
+        await deleteDoc(
+          doc(db, 'artifacts', appId, 'users', user.uid, 'study_sessions', id)
+        );
+        setDeleteConfirmationId(null);
+      }
+    },
+    [user]
+  );
+
+  const handleSaveProfile = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!user) return;
+      setIsSavingProfile(true);
       triggerHaptic();
-      await deleteDoc(
-        doc(db, 'artifacts', appId, 'users', user.uid, 'study_sessions', id)
-      );
-      setDeleteConfirmationId(null);
-    }
-  };
+      try {
+        await setDoc(
+          doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'main'),
+          profile
+        );
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsSavingProfile(false);
+      }
+    },
+    [user, profile]
+  );
 
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    setIsSavingProfile(true);
-    triggerHaptic();
-    try {
-      await setDoc(
-        doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'main'),
-        profile
-      );
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsSavingProfile(false);
-    }
-  };
+  // UPLOAD DE FOTO (Base64) - Versão Arquivo
+  const handlePhotoUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setProfile((prev) => ({
+            ...prev,
+            photoUrl: reader.result as string,
+          }));
+        };
+        reader.readAsDataURL(file);
+      }
+    },
+    []
+  );
 
-  // UPLOAD DE FOTO (Base64)
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfile({ ...profile, photoUrl: reader.result as string });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleUpdateGoal = async () => {
+  const handleUpdateGoal = useCallback(async () => {
     if (!user) return;
     const newGoal = parseInt(tempGoal) || 180;
     const updatedProfile = { ...profile, dailyGoalMinutes: newGoal };
@@ -731,7 +811,7 @@ export default function App() {
     } catch (error) {
       console.error(error);
     }
-  };
+  }, [user, tempGoal, profile]);
 
   const handleViewChange = (newView: ViewState) => {
     if (view !== newView) {
