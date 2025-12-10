@@ -163,6 +163,7 @@ const FIXED_SUBJECTS = [
   'Japonês',
   'Latim',
   'Legislação Especial',
+  'Legislação Específica',
   'Legislação Tributária',
   'Legislação de Trânsito',
   'Libras',
