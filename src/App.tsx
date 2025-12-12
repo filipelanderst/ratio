@@ -68,8 +68,6 @@ import {
   Play,
   Pause,
   RotateCcw,
-  Maximize2,
-  Minimize2,
   Hourglass,
   Download,
 } from 'lucide-react';
@@ -260,6 +258,22 @@ type ViewState =
   | 'timer';
 type TimerMode = 'stopwatch' | 'countdown';
 
+// --- Interfaces para Tipagem Estrita (eliminar `any`) ---
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  readonly userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+  prompt(): Promise<void>;
+}
+
+// Interface simplificada para custom ticks do Recharts
+// Não estende SVGProps para evitar conflitos de tipo com propriedades como textAnchor
+interface CustomTickProps {
+  x?: number;
+  y?: number;
+  payload?: { value: string | number };
+  textAnchor?: 'start' | 'middle' | 'end' | 'inherit';
+}
+
 // --- Helpers de Formatação ---
 
 const formatDurationDetailed = (mins: number) => {
@@ -390,7 +404,8 @@ export default function App() {
   >(null);
 
   // PWA Install State
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  // Tipagem estrita para PWA install prompt (economiza debugging e evita erros de runtime)
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   // Timer State with Persistence
   const [timerMode, setTimerMode] = useState<TimerMode>(() => {
@@ -429,11 +444,11 @@ export default function App() {
     setSelectedDate(localDate.toISOString().slice(0, 16));
   }, []);
 
-  // PWA Install Listener
+  // PWA Install Listener - Tipagem estrita para evitar `any`
   useEffect(() => {
-    const handler = (e: any) => {
+    const handler = (e: Event) => {
       e.preventDefault();
-      setInstallPrompt(e);
+      setInstallPrompt(e as BeforeInstallPromptEvent);
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
@@ -479,9 +494,9 @@ export default function App() {
     };
   }, [isDarkMode]);
 
-  // Timer Interval Logic
+  // Timer Interval Logic - Tipagem correta para NodeJS.Timeout
   useEffect(() => {
-    let interval: any = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (timerIsActive) {
       interval = setInterval(() => {
         setTimerSeconds((prev) => {
@@ -497,10 +512,12 @@ export default function App() {
           }
         });
       }, 1000);
-    } else if (!timerIsActive && timerSeconds !== 0) {
+    } else if (!timerIsActive && timerSeconds !== 0 && interval) {
       clearInterval(interval);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [timerIsActive, timerSeconds, timerMode]);
 
   // AUTENTICAÇÃO: Google + Anônimo (Fallback) + Persistência
@@ -636,10 +653,11 @@ export default function App() {
     triggerHaptic();
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Erro no Google Login:', e);
-      if (e.code !== 'auth/popup-closed-by-user') {
-        setAuthError(`Erro no login: ${e.message}`);
+      const firebaseError = e as { code?: string; message?: string };
+      if (firebaseError.code !== 'auth/popup-closed-by-user') {
+        setAuthError(`Erro no login: ${firebaseError.message || 'Erro desconhecido'}`);
       }
     }
   }, []);
@@ -1349,8 +1367,9 @@ export default function App() {
     }
   };
 
-  const CustomYAxisTick = ({ x, y, payload }: any) => {
-    const text = payload.value;
+  // Tipagem estrita para Recharts custom tick (remove `any`)
+  const CustomYAxisTick = ({ x = 0, y = 0, payload }: CustomTickProps) => {
+    const text = String(payload?.value ?? '');
     const words = text.split(' ');
     const lines = [];
     let currentLine = words[0];
@@ -1382,15 +1401,14 @@ export default function App() {
     );
   };
 
+  // Tipagem estrita para Recharts radar tick (remove `any`)
   const CustomRadarTick = ({
     payload,
-    x,
-    y,
+    x = 0,
+    y = 0,
     textAnchor,
-    stroke,
-    radius,
-  }: any) => {
-    const text = payload.value;
+  }: CustomTickProps) => {
+    const text = String(payload?.value ?? '');
     const words = text.split(' ');
     const lines = [];
     let currentLine = words[0];
@@ -1703,9 +1721,13 @@ export default function App() {
                     }`}
                   >
                     <div className='w-full h-full rounded-full overflow-hidden bg-neutral-200 dark:bg-neutral-800'>
+                      {/* width/height explícitos para evitar CLS (Cumulative Layout Shift) */}
                       <img
                         src={profile.photoUrl}
                         alt='Perfil'
+                        width={32}
+                        height={32}
+                        loading='eager'
                         className='w-full h-full rounded-full object-cover'
                       />
                     </div>
@@ -3068,7 +3090,7 @@ export default function App() {
                         <PolarGrid stroke={isDarkMode ? '#333' : '#eee'} />
                         <PolarAngleAxis
                           dataKey='name'
-                          tick={(props) => <CustomRadarTick {...props} />}
+                          tick={(props) => <CustomRadarTick {...(props as unknown as CustomTickProps)} />}
                         />
                         {/* tick={false} esconde os números do raio (0h, 1h...) */}
                         <PolarRadiusAxis
@@ -3113,7 +3135,7 @@ export default function App() {
                           type='category'
                           dataKey='name'
                           width={100}
-                          tick={<CustomYAxisTick />}
+                          tick={(props) => <CustomYAxisTick {...(props as unknown as CustomTickProps)} />}
                           interval={0}
                           axisLine={false}
                           tickLine={false}
@@ -3499,6 +3521,9 @@ export default function App() {
                           <img
                             src={profile.photoUrl}
                             alt='Perfil'
+                            width={96}
+                            height={96}
+                            loading='lazy'
                             className='w-full h-full object-cover'
                           />
                         ) : (
