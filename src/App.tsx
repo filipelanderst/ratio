@@ -2284,12 +2284,14 @@ export default function App() {
                   <p>Nenhum estudo registrado neste dia.</p>
                 </div>
               ) : (
-                <div className='space-y-3'>
-                  {selectedDaySessions.map((session) => (
+                <div className='space-y-0'>
+                  {selectedDaySessions.map((session, index) => (
                     <div
                       key={session.id}
-                      className={`flex items-center justify-between p-3 rounded-xl ${
-                        isDarkMode ? 'bg-neutral-900' : 'bg-slate-50'
+                      className={`flex items-center justify-between py-3 ${
+                        index < selectedDaySessions.length - 1 
+                          ? `border-b ${isDarkMode ? 'border-neutral-800' : 'border-slate-200'}` 
+                          : ''
                       }`}
                     >
                       <div>

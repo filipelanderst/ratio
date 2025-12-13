@@ -37,6 +37,8 @@ import {
   PieChart as PieChartIcon,
   BarChart3,
   Hexagon,
+  TrendingUp,
+  AlignLeft,
 } from 'lucide-react';
 
 import { COLORS, getHeatmapColors, ICON_SOLID_STYLE } from '../lib/theme';
@@ -312,7 +314,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({
       {/* EVOLUTION TABLE */}
       <div className={`${THEME.card} p-6 rounded-2xl border shadow-sm`}>
         <h3 className={`font-bold ${THEME.text} flex items-center gap-2 mb-4`}>
-          <Activity className='h-5 w-5' style={ICON_SOLID_STYLE} /> Relatório de Evolução
+          <TrendingUp className='h-5 w-5' style={ICON_SOLID_STYLE} /> Relatório de Evolução
         </h3>
         <div className='overflow-x-auto -mx-2 px-2 hide-scrollbar'>
           <table className='w-full text-xs sm:text-sm'>
@@ -554,40 +556,40 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({
 
       {/* DISTRIBUTION CHARTS */}
       <div className={`${THEME.card} p-6 rounded-2xl border shadow-sm`}>
-        <div className='flex justify-between items-center mb-6 flex-wrap gap-4'>
-          <h3 className={`font-bold ${THEME.text} flex items-center gap-2`}>
-            <Activity className='h-5 w-5' style={ICON_SOLID_STYLE} /> Distribuição por Matéria
+        <div className='flex justify-between items-center mb-4 gap-2'>
+          <h3 className={`font-bold ${THEME.text} flex items-center gap-2 text-sm sm:text-base`}>
+            <PieChartIcon className='h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0' style={ICON_SOLID_STYLE} /> Distribuição por Matéria
           </h3>
-          <div className={`flex p-1 gap-1 rounded-lg ${isDarkMode ? 'bg-neutral-900' : 'bg-slate-100'}`}>
+          <div className={`flex p-0.5 gap-0.5 rounded-lg flex-shrink-0 ${isDarkMode ? 'bg-neutral-900' : 'bg-slate-100'}`}>
             <button
               onClick={() => { setChartType('pie'); triggerHaptic(); }}
-              className={`p-2 rounded ${
+              className={`p-1.5 rounded ${
                 chartType === 'pie'
                   ? 'bg-gradient-to-br from-[#FDE047] to-[#EAB308] text-black shadow-sm'
                   : `${THEME.textMuted}`
               }`}
             >
-              <PieChartIcon className='h-4 w-4' />
+              <PieChartIcon className='h-3.5 w-3.5' />
             </button>
             <button
               onClick={() => { setChartType('radar'); triggerHaptic(); }}
-              className={`p-2 rounded ${
+              className={`p-1.5 rounded ${
                 chartType === 'radar'
                   ? 'bg-gradient-to-br from-[#FDE047] to-[#EAB308] text-black shadow-sm'
                   : `${THEME.textMuted}`
               }`}
             >
-              <Hexagon className='h-4 w-4' />
+              <Hexagon className='h-3.5 w-3.5' />
             </button>
             <button
               onClick={() => { setChartType('bar'); triggerHaptic(); }}
-              className={`p-2 rounded ${
+              className={`p-1.5 rounded ${
                 chartType === 'bar'
                   ? 'bg-gradient-to-br from-[#FDE047] to-[#EAB308] text-black shadow-sm'
                   : `${THEME.textMuted}`
               }`}
             >
-              <BarChart3 className='h-4 w-4' />
+              <BarChart3 className='h-3.5 w-3.5' />
             </button>
           </div>
         </div>
@@ -706,7 +708,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({
       <div className={`${THEME.card} p-6 rounded-2xl border shadow-sm`}>
         <div className='flex justify-between items-center mb-4'>
           <h3 className={`font-bold ${THEME.text} flex items-center gap-2`}>
-            <Activity className='h-5 w-5' style={ICON_SOLID_STYLE} /> Lista Detalhada
+            <AlignLeft className='h-5 w-5' style={ICON_SOLID_STYLE} /> Lista Detalhada
           </h3>
           <button
             onClick={() => { setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc'); triggerHaptic(); }}
@@ -720,23 +722,21 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({
             )}
           </button>
         </div>
-        <div className='space-y-2 max-h-96 overflow-y-auto hide-scrollbar'>
+        <div className='space-y-0 max-h-96 overflow-y-auto hide-scrollbar'>
           {(stats.listData || []).map((item: ChartDataItem, index: number) => (
             <div
               key={index}
-              className={`flex justify-between items-center p-3 rounded-xl border ${isDarkMode ? 'border-neutral-800' : 'border-slate-200'} ${
-                isDarkMode ? 'bg-neutral-900/50' : 'bg-slate-50'
-              }`}
+              className={`flex justify-between items-center py-3 border-b ${isDarkMode ? 'border-neutral-800' : 'border-slate-200'} last:border-b-0`}
             >
-              <div className='flex items-center gap-3 overflow-hidden'>
-                <div className='w-3 h-3 rounded-sm shrink-0' style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                <span className={`font-medium truncate max-w-[150px] sm:max-w-[250px] ${THEME.text}`}>{item.name}</span>
+              <div className='flex items-center gap-2 overflow-hidden min-w-0 flex-1'>
+                <div className='w-2 h-2 rounded-sm shrink-0' style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                <span className={`text-sm font-medium truncate ${THEME.text}`}>{item.name}</span>
               </div>
-              <div className='flex gap-2 text-sm font-bold shrink-0 items-center'>
-                <span className={`px-2 py-1 rounded text-xs whitespace-nowrap ${isDarkMode ? 'bg-neutral-800 text-neutral-300' : 'bg-white text-slate-600 border'}`}>
+              <div className='flex gap-1.5 text-xs font-bold shrink-0 items-center'>
+                <span className={`px-1.5 py-0.5 rounded whitespace-nowrap ${isDarkMode ? 'bg-neutral-800 text-neutral-300' : 'bg-white text-slate-600 border'}`}>
                   {item.hours}
                 </span>
-                <span className='px-2 py-1 bg-gradient-to-br from-[#FDE047] to-[#EAB308] text-black rounded text-xs min-w-[3rem] text-center'>
+                <span className='px-1.5 py-0.5 bg-gradient-to-br from-[#FDE047] to-[#EAB308] text-black rounded min-w-[2.5rem] text-center'>
                   {item.percentage}%
                 </span>
               </div>
