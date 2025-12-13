@@ -96,6 +96,7 @@ import {
   normalizeString,
   triggerHaptic,
   getRangeLabel,
+  getDaysFromRange,
 } from './lib/helpers';
 import {
   COLORS,
@@ -389,14 +390,6 @@ export default function App() {
     };
     fetchProfile();
   }, [user]);
-
-  const normalizeString = (str: string) =>
-    str
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[.,]/g, '')
-      .toLowerCase()
-      .trim();
 
   const filteredSuggestions = useMemo(() => {
     const cleanInput = normalizeString(subjectInput);
@@ -702,11 +695,6 @@ export default function App() {
     const todayMinutes = sessions
       .filter((s) => new Date(s.date).toDateString() === now.toDateString())
       .reduce((acc, curr) => acc + curr.durationMinutes, 0);
-
-    const getDaysFromRange = (range: TimeRange) => {
-      if (range === 'day') return 1;
-      return parseInt(range.split('_')[0]);
-    };
 
     const filteredSessions = sessions.filter((s) => {
       const sDate = new Date(s.date);
@@ -1444,6 +1432,7 @@ export default function App() {
                   setIsDarkMode(!isDarkMode);
                   triggerHaptic();
                 }}
+                aria-label={isDarkMode ? 'Ativar modo claro' : 'Ativar modo escuro'}
                 className={`p-2 rounded-full active:scale-90 transition-transform ${
                   isDarkMode
                     ? 'bg-neutral-800 hover:bg-neutral-700'
@@ -1458,6 +1447,7 @@ export default function App() {
               </button>
               <button
                 onClick={handleLogout}
+                aria-label="Sair da conta"
                 className='text-xs bg-neutral-800 hover:bg-neutral-700 text-white px-3 py-2 rounded-lg flex gap-1 items-center font-bold transition-all active:scale-95'
               >
                 <LogOut className='h-3 w-3' />
@@ -2052,6 +2042,7 @@ export default function App() {
               <div className='flex items-center gap-6 mb-8 flex-shrink-0'>
                 <button
                   onClick={handleTimerReset}
+                  aria-label="Resetar cronômetro"
                   className={`p-3 rounded-full transition-all active:scale-95 ${
                     isDarkMode
                       ? 'text-neutral-500 hover:text-white hover:bg-neutral-800'
@@ -2065,6 +2056,7 @@ export default function App() {
                 {/* Minimalist Play/Pause Button - Thin ring */}
                 <button
                   onClick={handleTimerStart}
+                  aria-label={timerIsActive ? 'Pausar cronômetro' : 'Iniciar cronômetro'}
                   className={`w-16 h-16 rounded-full flex items-center justify-center transition-all active:scale-95 border ${
                     timerIsActive
                       ? 'border-red-500/50 text-red-500 hover:bg-red-500/10'
@@ -2213,6 +2205,7 @@ export default function App() {
                 <div className='flex items-center gap-2'>
                   <button
                     onClick={() => setHeatmapYear((y) => y - 1)}
+                    aria-label="Ano anterior"
                     className={`p-1 rounded ${THEME.textMuted} hover:bg-neutral-800`}
                   >
                     <ChevronLeft className='h-4 w-4' />
@@ -2222,6 +2215,7 @@ export default function App() {
                   </span>
                   <button
                     onClick={() => setHeatmapYear((y) => y + 1)}
+                    aria-label="Próximo ano"
                     className={`p-1 rounded ${THEME.textMuted} hover:bg-neutral-800`}
                   >
                     <ChevronRight className='h-4 w-4' />
@@ -3021,6 +3015,7 @@ export default function App() {
                       );
                       triggerHaptic();
                     }}
+                    aria-label="Mês anterior"
                     className={`p-2 rounded-full ${THEME.textMuted} hover:bg-neutral-800`}
                   >
                     <ChevronLeft className='h-5 w-5' />
@@ -3036,6 +3031,7 @@ export default function App() {
                       );
                       triggerHaptic();
                     }}
+                    aria-label="Próximo mês"
                     className={`p-2 rounded-full ${THEME.textMuted} hover:bg-neutral-800`}
                   >
                     <ChevronRight className='h-5 w-5' />
@@ -3437,6 +3433,7 @@ export default function App() {
         >
           <button
             onClick={() => handleViewChange('home')}
+            aria-label="Ir para página inicial"
             className={`flex flex-col items-center gap-1 p-2 rounded-xl w-16 transition-all ${
               view === 'home'
                 ? `text-[${ICON_SOLID_COLOR}] scale-110`
@@ -3456,6 +3453,7 @@ export default function App() {
           </button>
           <button
             onClick={() => handleViewChange('calendar')}
+            aria-label="Abrir calendário"
             className={`flex flex-col items-center gap-1 p-2 rounded-xl w-16 transition-all ${
               view === 'calendar'
                 ? `text-[${ICON_SOLID_COLOR}] scale-110`
@@ -3475,6 +3473,7 @@ export default function App() {
           </button>
           <button
             onClick={() => handleViewChange('statistics')}
+            aria-label="Ver estatísticas de estudo"
             className={`flex flex-col items-center gap-1 p-2 rounded-xl w-16 transition-all ${
               view === 'statistics'
                 ? `text-[${ICON_SOLID_COLOR}] scale-110`
@@ -3494,6 +3493,7 @@ export default function App() {
           </button>
           <button
             onClick={() => handleViewChange('history')}
+            aria-label="Ver histórico de sessões"
             className={`flex flex-col items-center gap-1 p-2 rounded-xl w-16 transition-all ${
               view === 'history'
                 ? `text-[${ICON_SOLID_COLOR}] scale-110`
@@ -3513,6 +3513,7 @@ export default function App() {
           </button>
           <button
             onClick={() => handleViewChange('profile')}
+            aria-label="Abrir configurações de perfil"
             className={`flex flex-col items-center gap-1 p-2 rounded-xl w-16 transition-all ${
               view === 'profile'
                 ? `text-[${ICON_SOLID_COLOR}] scale-110`
