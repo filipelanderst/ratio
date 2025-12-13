@@ -1353,6 +1353,11 @@ export default function App() {
         body {
           overscroll-behavior-y: none;
         }
+        /* Clarear ícone de calendário no dark mode */
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+          filter: ${isDarkMode ? 'invert(1) brightness(1.5)' : 'none'};
+          cursor: pointer;
+        }
       `}</style>
 
       {/* SVG Definição do Degradê para Ícones - Uniformizado com os botões (Amarelo Claro -> Ouro) */}
@@ -2367,6 +2372,11 @@ export default function App() {
                       contentStyle={{
                         backgroundColor: isDarkMode ? '#171717' : '#fff',
                         borderColor: isDarkMode ? '#333' : '#eee',
+                      }}
+                      itemStyle={{
+                        color: isDarkMode ? '#fff' : '#000',
+                      }}
+                      labelStyle={{
                         color: isDarkMode ? '#fff' : '#000',
                       }}
                     />
@@ -2490,6 +2500,12 @@ export default function App() {
                       contentStyle={{
                         backgroundColor: isDarkMode ? '#171717' : '#fff',
                         borderColor: isDarkMode ? '#333' : '#eee',
+                      }}
+                      itemStyle={{
+                        color: isDarkMode ? '#fff' : '#000',
+                      }}
+                      labelStyle={{
+                        color: isDarkMode ? '#fff' : '#000',
                       }}
                     />
                     <Bar
@@ -2628,6 +2644,12 @@ export default function App() {
                         backgroundColor: isDarkMode ? '#171717' : '#fff',
                         borderColor: isDarkMode ? '#333' : '#eee',
                       }}
+                      itemStyle={{
+                        color: isDarkMode ? '#fff' : '#000',
+                      }}
+                      labelStyle={{
+                        color: isDarkMode ? '#fff' : '#000',
+                      }}
                     />
                     <Line
                       type='linear'
@@ -2755,6 +2777,12 @@ export default function App() {
                             backgroundColor: isDarkMode ? '#171717' : '#fff',
                             borderColor: isDarkMode ? '#333' : '#eee',
                           }}
+                          itemStyle={{
+                            color: isDarkMode ? '#fff' : '#000',
+                          }}
+                          labelStyle={{
+                            color: isDarkMode ? '#fff' : '#000',
+                          }}
                         />
                         <Legend
                           content={renderPieLegend}
@@ -2810,6 +2838,12 @@ export default function App() {
                             backgroundColor: isDarkMode ? '#171717' : '#fff',
                             borderColor: isDarkMode ? '#333' : '#eee',
                           }}
+                          itemStyle={{
+                            color: isDarkMode ? '#fff' : '#000',
+                          }}
+                          labelStyle={{
+                            color: isDarkMode ? '#fff' : '#000',
+                          }}
                         />
                       </RadarChart>
                     )}
@@ -2841,6 +2875,12 @@ export default function App() {
                           contentStyle={{
                             backgroundColor: isDarkMode ? '#171717' : '#fff',
                             borderColor: isDarkMode ? '#333' : '#eee',
+                          }}
+                          itemStyle={{
+                            color: isDarkMode ? '#fff' : '#000',
+                          }}
+                          labelStyle={{
+                            color: isDarkMode ? '#fff' : '#000',
                           }}
                         />
                         <Bar dataKey='value' radius={[0, 4, 4, 0]}>
