@@ -96,6 +96,6 @@ export const FIXED_SUBJECTS = [
   'TECconcursos',
   'Teologia',
   'Vendas e Negociação',
-  'Vibe Coding',
+  'Vibe Coding (IA)',
   'Xadrez',
 ].sort();
