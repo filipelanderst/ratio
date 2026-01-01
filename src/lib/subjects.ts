@@ -49,6 +49,7 @@ export const FIXED_SUBJECTS = [
   'Engenharia de Software',
   'Espanhol',
   'Estatística',
+  'Estratégia',
   'Ética',
   'Farmácia',
   'Filosofia',
